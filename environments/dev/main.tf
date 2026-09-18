@@ -91,3 +91,24 @@ resource "aws_nat_gateway" "natgw_main" {
     Name = "${var.environment}-nat-${each.key}"
   }
 }
+
+resource "aws_route_table" "private_rt" {
+  for_each = toset(var.availability_zones)
+
+  vpc_id = aws_vpc.main.id
+
+  route {
+    cidr_block = "0.0.0.0"
+    nat_gateway_id = aws_nat_gateway.nat[each.key].id
+  }
+
+  tags = {
+    Name = "${var.environment}-private-rt-${each-key}"
+  }
+}
+
+resource "aws_route_table_association" "private_rt_assoc" {
+  for_each = aws_subnet.private_sub
+  subnet_id = each.value.id
+  route_table_id = aws_route_table.private[each.key].id
+}
