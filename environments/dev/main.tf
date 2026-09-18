@@ -76,3 +76,18 @@ resource "aws_eip" "nat_eip" {
     Name = "${var.environment}-nat-eip-${each.key}"
   }
 }
+
+resource "aws_nat_gateway" "natgw_main" {
+  for_each = aws_subnet.public_sub
+
+  allocation_id = aws_eip.nat_eip[each.key].id
+  subnet_id = each.value.id
+
+  depends_on = [
+    aws_internet_gateway.igw_main
+  ]
+
+  tags = {
+    Name = "${var.environment}-nat-${each.key}"
+  }
+}
