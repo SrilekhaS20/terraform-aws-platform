@@ -24,22 +24,6 @@ resource "aws_subnet" "public_sub" {
   }
 }
 
-resource "aws_subnet" "private_sub" {
-  for_each = {
-    for index, az in var.availability_zones :
-    az => index
-  }
-
-  vpc_id            = aws_vpc.main.id
-  cidr_block        = var.private_subnet_cidrs[each.value]
-  availability_zone = each.key
-
-  tags = {
-    Name = "${var.environment}-private-${each.key}"
-    Tier = "private"
-  }
-}
-
 resource "aws_internet_gateway" "igw_main" {
   vpc_id = aws_vpc.main.id
 
@@ -65,4 +49,30 @@ resource "aws_route_table_association" "public_rt_assoc" {
   for_each       = aws_subnet.public_sub
   subnet_id      = each.value.id
   route_table_id = aws_route_table.public_rt.id
+}
+
+resource "aws_subnet" "private_sub" {
+  for_each = {
+    for index, az in var.availability_zones :
+    az => index
+  }
+
+  vpc_id            = aws_vpc.main.id
+  cidr_block        = var.private_subnet_cidrs[each.value]
+  availability_zone = each.key
+
+  tags = {
+    Name = "${var.environment}-private-${each.key}"
+    Tier = "private"
+  }
+}
+
+resource "aws_eip" "nat_eip" {
+  for_each = toset(var.availability_zones)
+
+  domain = "vpc"
+
+  tags = {
+    Name = "${var.environment}-nat-eip-${each.key}"
+  }
 }
